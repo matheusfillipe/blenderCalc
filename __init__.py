@@ -2,7 +2,7 @@ bl_info = {
     "name": "BlenderCalc",
     "author": "Matheus Fillipe",
     "version": (0, 1),
-    "blender": (2, 8, 0),  
+    "blender": (2, 7, 0),  
     "category": "Data Extraction",
 }
 
