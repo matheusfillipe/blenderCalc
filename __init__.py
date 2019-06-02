@@ -218,12 +218,5 @@ def unregister():
     bpy.utils.unregister_class(VerticeTable)
     locationTextEditor.remove(add_vertex_button)
 
-
-
-
-# This allows you to run the script directly from Blender's Text editor
-# to test the add-on without having to install it.
-if __name__ == "__main__":    
-    path1=os.path.dirname(bpy.context.space_data.text.filepath)
-    sys.path.append(path1)
-    register()
+if __name__ == "__main__":  
+    register()  
