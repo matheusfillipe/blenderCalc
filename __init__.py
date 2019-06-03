@@ -72,7 +72,7 @@ class Soffice(bpy.types.Operator):
 
 class Area(bpy.types.Operator):
     """Area"""      # Use this as a tooltip for menu items and buttons.
-    bl_idname = "object.vertex"        # Unique identifier for buttons and menu items to reference.
+    bl_idname = "object.area"        # Unique identifier for buttons and menu items to reference.
     bl_label = "Area"         # Display name in the interface.
     bl_options = {'REGISTER', 'UNDO'}  # Enable undo for the operator.
 
@@ -97,11 +97,12 @@ class Area(bpy.types.Operator):
         # access the document's text property
         text = model.CurrentSelection
 
-        sheets = model.getSheets()
+        sheets = model.getCurrentController()
+
         i=text.CellAddress.Column
         j=text.CellAddress.Row
 
-        cell = sheets.getByIndex(0).getCellByPosition(i, j)
+        cell = sheets.getActiveSheet().getCellByPosition(i, j)
         
         per=[list(p) for p in permutations(getSelVerts())]
         areas=[]
@@ -147,24 +148,24 @@ class VerticeTable(bpy.types.Operator):
         V=getSelVerts()
 
 
-        sheets = model.getSheets()
+        sheets = model.getCurrentController()
         i=text.CellAddress.Column
         j=text.CellAddress.Row
 
 
         if len(V)==1:
-            cell = sheets.getByIndex(0).getCellByPosition(i, j)
+            cell = sheets.getActiveSheet().getCellByPosition(i, j)
             cell.setFormula( str(rround(V[0][0])))
             j+=1            
-            cell = sheets.getByIndex(0).getCellByPosition(i, j)
+            cell = sheets.getActiveSheet().getCellByPosition(i, j)
             cell.setFormula(str(rround(V[0][1])))
 
         elif len(V)>1:
             for v in V:
-                cell = sheets.getByIndex(0).getCellByPosition(i, j)
+                cell = sheets.getActiveSheet().getCellByPosition(i, j)
                 cell.setFormula( str(rround(v[0])))
                 i+=1            
-                cell = sheets.getByIndex(0).getCellByPosition(i, j)
+                cell = sheets.getActiveSheet().getCellByPosition(i, j)
                 cell.setFormula(str(rround(v[1])))
                 j+=1     
                 i-=1                        
@@ -206,20 +207,20 @@ class ObjectMoveX(bpy.types.Operator):
         V=getSelVerts()
 
 
-        sheets = model.getSheets()
+        sheets = model.getCurrentController()
         i=text.CellAddress.Column
         j=text.CellAddress.Row
 
         if len(V)==1:
-            cell = sheets.getByIndex(0).getCellByPosition(i, j)
+            cell = sheets.getActiveSheet().getCellByPosition(i, j)
             cell.setFormula( str(rround(V[0][0])))
             j+=1            
-            cell = sheets.getByIndex(0).getCellByPosition(i, j)
+            cell = sheets.getActiveSheet().getCellByPosition(i, j)
             cell.setFormula(str(rround(V[0][1])))
           
         elif len(V)==2:
             d=str(rround(np.sqrt((V[0][0]-V[1][0])**2+(V[0][1]-V[1][1])**2)))
-            cell = sheets.getByIndex(0).getCellByPosition(i, j)
+            cell = sheets.getActiveSheet().getCellByPosition(i, j)
             cell.setFormula( d)
 
         elif len(V)>2:
@@ -241,7 +242,7 @@ class ObjectMoveX(bpy.types.Operator):
                 if x == len(V)-1:
                     break
                 d=str(rround(np.sqrt((V[x+0][0]-V[x+1][0])**2+(V[x+0][1]-V[x+1][1])**2)))
-                cell = sheets.getByIndex(0).getCellByPosition(i, j)
+                cell = sheets.getActiveSheet().getCellByPosition(i, j)
                 cell.setFormula( d)               
                 j+=1
 
