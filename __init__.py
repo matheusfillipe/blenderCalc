@@ -11,6 +11,7 @@ import bmesh
 import sys
 import os
 import numpy as np
+from itertools import permutations
 
 path2=os.path.dirname(os.path.realpath(sys.argv[0]))
 
@@ -23,13 +24,13 @@ location=bpy.types.CONSOLE_HT_header
 locationTextEditor=bpy.types.VIEW3D_HT_header
 
 def rround(x): #define precision
-    return round(x,2)
+    return round(x,3)
 
 def runSoffice():
     # run soffice as 'server'    
     from subprocess import Popen
 
-    officepath = 'soffice' #respectivly the full path
+    officepath = 'libreoffice' #respectivly the full path
     calc = '--calc'
     pipe = "--accept=socket,host=localhost,port=2002;urp;StarOffice.ServiceManager --norestore"
     Popen([officepath, calc, pipe]);
@@ -46,6 +47,16 @@ def getSelVerts():
    
     return A
 
+def PolygonArea(corners):
+    n = len(corners) # of corners
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += corners[i][0] * corners[j][1]
+        area -= corners[j][0] * corners[i][1]
+    area = abs(area) / 2.0
+    return area
+
 class Soffice(bpy.types.Operator):
     """Open Soffice"""      # Use this as a tooltip for menu items and buttons.
     bl_idname = "object.soffice"        # Unique identifier for buttons and menu items to reference.
@@ -55,6 +66,55 @@ class Soffice(bpy.types.Operator):
     def execute(self, context):        # execute() is called when running the operator.
         runSoffice()
         return {'FINISHED'}            # Lets Blender know the operator finished successfully.
+
+
+
+
+class Area(bpy.types.Operator):
+    """Area"""      # Use this as a tooltip for menu items and buttons.
+    bl_idname = "object.vertex"        # Unique identifier for buttons and menu items to reference.
+    bl_label = "Area"         # Display name in the interface.
+    bl_options = {'REGISTER', 'UNDO'}  # Enable undo for the operator.
+
+    def execute(self, context):        # execute() is called when running the operator.
+
+        # get the uno component context from the PyUNO runtime
+        localContext = uno.getComponentContext()
+
+        # create the UnoUrlResolver
+        resolver = localContext.ServiceManager.createInstanceWithContext(
+        				"com.sun.star.bridge.UnoUrlResolver", localContext )
+
+        # connect to the running office
+        ctx = resolver.resolve( "uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext" )
+        smgr = ctx.ServiceManager
+
+        # get the central desktop object
+        desktop = smgr.createInstanceWithContext( "com.sun.star.frame.Desktop",ctx)
+
+        # access the current writer document
+        model = desktop.getCurrentComponent()
+        # access the document's text property
+        text = model.CurrentSelection
+
+        sheets = model.getSheets()
+        i=text.CellAddress.Column
+        j=text.CellAddress.Row
+
+        cell = sheets.getByIndex(0).getCellByPosition(i, j)
+        
+        per=[list(p) for p in permutations(getSelVerts())]
+        areas=[]
+        for p in per:
+            areas.append(PolygonArea(p))
+        cell.setFormula(str(rround(max(areas))))
+
+        ctx.ServiceManager
+
+
+        return {'FINISHED'}            # Lets Blender know the operator finished successfully.
+
+
 
 
 class VerticeTable(bpy.types.Operator):
@@ -150,7 +210,6 @@ class ObjectMoveX(bpy.types.Operator):
         i=text.CellAddress.Column
         j=text.CellAddress.Row
 
-
         if len(V)==1:
             cell = sheets.getByIndex(0).getCellByPosition(i, j)
             cell.setFormula( str(rround(V[0][0])))
@@ -164,6 +223,20 @@ class ObjectMoveX(bpy.types.Operator):
             cell.setFormula( d)
 
         elif len(V)>2:
+            perm=[list(p) for p in permutations(V)]
+            P=[]
+            for p in perm:
+                S=[]
+                for x,v in enumerate(p):
+                    if x == len(p)-1:
+                        break                        
+                    d=np.sqrt((p[x+0][0]-p[x+1][0])**2+(p[x+0][1]-p[x+1][1])**2)
+                    S.append(d)
+                P.append(sum(S))
+            
+            V=perm[P.index(min(P))]
+
+            
             for x,v in enumerate(V):
                 if x == len(V)-1:
                     break
@@ -197,6 +270,12 @@ def add_soffice_button(self, context):
             text=Soffice.bl_label,  
             icon='PLAY') 
 
+def add_area_button(self, context):  
+        self.layout.operator(  
+        Area.bl_idname,  
+            text=Area.bl_label,  
+            icon='PLAY') 
+
 
 
 def register():
@@ -206,6 +285,9 @@ def register():
     locationTextEditor.append(add_soffice_button)
     bpy.utils.register_class(VerticeTable)
     locationTextEditor.append(add_vertex_button)
+    bpy.utils.register_class(Area)
+    locationTextEditor.append(add_area_button)
+
 
 
 
@@ -217,6 +299,9 @@ def unregister():
     locationTextEditor.remove(add_soffice_button)
     bpy.utils.unregister_class(VerticeTable)
     locationTextEditor.remove(add_vertex_button)
+    bpy.utils.unregister_class(Area)
+    locationTextEditor.remove(add_area_button)
+
 
 if __name__ == "__main__":  
     register()  
