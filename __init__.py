@@ -10,6 +10,8 @@ import bpy
 import bmesh
 import sys
 import os
+#TODO correct addon path, find alternativer to popen call on runBeam function, embed uno and anastruct libraries 
+#TODO Add single menu instead of button mess
 
 from itertools import permutations
 import subprocess as SP
