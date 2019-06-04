@@ -10,15 +10,16 @@ import bpy
 import bmesh
 import sys
 import os
-import numpy as np
+
 from itertools import permutations
+import subprocess as SP
+import numpy as np
+#Replace with yours:
+ADDON_PATH="/home/matheus/.config/blender/2.80/scripts/addons/blenderCalc/"
 
-path2=os.path.dirname(os.path.realpath(sys.argv[0]))
-
-sys.path.append(path2)
 sys.path.append("/usr/lib/python3/dist-packages/")
-
 import uno
+
 
 location=bpy.types.CONSOLE_HT_header
 locationTextEditor=bpy.types.VIEW3D_HT_header
@@ -29,11 +30,20 @@ def rround(x): #define precision
 def runSoffice():
     # run soffice as 'server'    
     from subprocess import Popen
-
     officepath = 'libreoffice' #respectivly the full path
     calc = '--calc'
     pipe = "--accept=socket,host=localhost,port=2002;urp;StarOffice.ServiceManager --norestore"
     Popen([officepath, calc, pipe]);
+
+def runBeam(args):
+    # run soffice as 'server'    
+    from subprocess import Popen
+    script_file = ADDON_PATH
+    directory = script_file#os.path.dirname(script_file)
+    officepath = directory+'beam.py' #respectivly the full path
+    pipe = str(args)
+    Popen([officepath, pipe]);
+
 
 def getSelVerts():
     A=[]
@@ -43,8 +53,7 @@ def getSelVerts():
             P=[]
             P.append(v.co.x)
             P.append(v.co.y)
-            A.append(P)
-   
+            A.append(P)   
     return A
 
 def PolygonArea(corners):
@@ -57,6 +66,7 @@ def PolygonArea(corners):
     area = abs(area) / 2.0
     return area
 
+
 class Soffice(bpy.types.Operator):
     """Open Soffice"""      # Use this as a tooltip for menu items and buttons.
     bl_idname = "object.soffice"        # Unique identifier for buttons and menu items to reference.
@@ -67,6 +77,45 @@ class Soffice(bpy.types.Operator):
         runSoffice()
         return {'FINISHED'}            # Lets Blender know the operator finished successfully.
 
+
+
+
+class Beam(bpy.types.Operator):
+    """Beam"""      # Use this as a tooltip for menu items and buttons.
+    bl_idname = "object.beam"        # Unique identifier for buttons and menu items to reference.
+    bl_label = "Beam"         # Display name in the interface.
+    bl_options = {'REGISTER', 'UNDO'}  # Enable undo for the operator.
+
+    def execute(self, context):        # execute() is called when running the operator.
+        V=getSelVerts()
+        if len(V)==2:            
+                d=rround(np.sqrt((V[0][0]-V[1][0])**2+(V[0][1]-V[1][1])**2))
+                runBeam([d])
+               
+        elif len(V)>2:
+            L=[]
+            perm=[list(p) for p in permutations(V)]
+            P=[]
+            for p in perm:
+                S=[]
+                for x,v in enumerate(p):
+                    if x == len(p)-1:
+                        break                        
+                    d=np.sqrt((p[x+0][0]-p[x+1][0])**2+(p[x+0][1]-p[x+1][1])**2)
+                    S.append(d)
+                P.append(sum(S))
+            
+            V=perm[P.index(min(P))]
+            V=sorted(V, key=sum)            
+            
+            for x,v in enumerate(V):
+                if x == len(V)-1:
+                    break
+                d=rround(np.sqrt((V[x+0][0]-V[x+1][0])**2+(V[x+0][1]-V[x+1][1])**2))
+                L.append(d)
+            runBeam(L)
+
+        return {'FINISHED'}            # Lets Blender know the operator finished successfully.
 
 
 
@@ -236,8 +285,7 @@ class ObjectMoveX(bpy.types.Operator):
                 P.append(sum(S))
             
             V=perm[P.index(min(P))]
-
-            
+            V=sorted(V, key=sum)            
             for x,v in enumerate(V):
                 if x == len(V)-1:
                     break
@@ -277,6 +325,11 @@ def add_area_button(self, context):
             text=Area.bl_label,  
             icon='PLAY') 
 
+def add_beam_button(self, context):  
+        self.layout.operator(  
+        Beam.bl_idname,  
+            text=Beam.bl_label,  
+            icon='PLAY') 
 
 
 def register():
@@ -288,6 +341,9 @@ def register():
     locationTextEditor.append(add_vertex_button)
     bpy.utils.register_class(Area)
     locationTextEditor.append(add_area_button)
+    bpy.utils.register_class(Beam)
+    locationTextEditor.append(add_beam_button)
+
 
 
 
@@ -302,6 +358,9 @@ def unregister():
     locationTextEditor.remove(add_vertex_button)
     bpy.utils.unregister_class(Area)
     locationTextEditor.remove(add_area_button)
+    bpy.utils.unregister_class(Beam)
+    locationTextEditor.remove(add_beam_button)
+
 
 
 if __name__ == "__main__":  
