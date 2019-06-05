@@ -190,6 +190,9 @@ def loads(L):
         fig=ss.show_shear_force(show=False)    
         plt.title('Esforço Cortante '+os.path.basename(path))
         plt.savefig(path+"_DEC.png")
+        import pickle
+        with open(path+'.pkl', 'wb') as f:
+            pickle.dump(ss, f)
 
 
 #    fig=ss.show_displacement()
@@ -210,11 +213,11 @@ def loads(L):
 
     #reactions
     v=ss.get_node_results_system(node_id=i+1)['Fy']
-    writeSelectedCell(rround(v),10+i,0) 
+    writeSelectedCell(rround(v),5+i,0) 
     i+=1    
     for l in L:
         v=ss.get_node_results_system(node_id=i+1)['Fy']
-        writeSelectedCell(rround(v),10+i,0)
+        writeSelectedCell(rround(v),5+i,0)
         i+=1
 
  
